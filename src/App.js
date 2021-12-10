@@ -46,7 +46,7 @@ const particlesOptions = {
 const initialState = {
   input: "",
   imageUrl: "",
-  box: {},
+  boxes: [],
   route: "home",
   isSignedIn: true,
   user: {
@@ -76,23 +76,40 @@ class App extends Component {
     });
   };
 
+  // Face API Bounding Box
   calculateFaceLocation = (data) => {
-    console.log("Total Faces = ", data.outputs[0].data.regions.length);
-    const clarifaiFace =
-      data.outputs[0].data.regions[0].region_info.bounding_box;
-    const image = document.getElementById("inputimage");
-    const width = Number(image.width);
-    const height = Number(image.height);
-    return {
-      leftCol: clarifaiFace.left_col * width,
-      topRow: clarifaiFace.top_row * height,
-      rightCol: width - clarifaiFace.right_col * width,
-      bottomRow: height - clarifaiFace.bottom_row * height,
-    };
+    const image = document.getElementById("inputimage"); // get image dimensions
+    const width = Number(image.width); // image width
+    const height = Number(image.height); // image height
+    const boxData = data.outputs[0].data.regions;
+    //console.log(`image width: ${width}`)
+    //console.log(`image height: ${height}`)
+
+    if (boxData) {
+      // if boxData not empty
+      console.log(boxData.length);
+      this.setState({ status: `${boxData.length} human face(s) detected` });
+      return boxData.map((face) => {
+        const clarifaiFace = face.region_info.bounding_box;
+        return {
+          leftCol: clarifaiFace.left_col * width,
+          topRow: clarifaiFace.top_row * height,
+          rightCol: width - clarifaiFace.right_col * width,
+          bottomRow: height - clarifaiFace.bottom_row * height,
+        };
+      });
+    } else {
+      // if boxData empty
+      // IF 'NO' FACES DETECTED IN IMAGE
+      //console.log(`empty`)
+      this.setState({
+        errors: `no human face(s) detected, please try another image`,
+      });
+    }
   };
 
-  displayFaceBox = (box) => {
-    this.setState({ box: box });
+  displayFaceBox = (boxes) => {
+    this.setState({ boxes: boxes });
   };
 
   onInputChange = (event) => {
@@ -107,7 +124,10 @@ class App extends Component {
     this.setState({ imageUrl: this.state.input });
     fetch("https://secret-plains-91670.herokuapp.com/imageurl", {
       method: "post",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: window.sessionStorage.getItem("token"),
+      },
       body: JSON.stringify({
         input: this.state.input,
       }),
@@ -117,7 +137,10 @@ class App extends Component {
         if (response) {
           fetch("https://secret-plains-91670.herokuapp.com/image", {
             method: "put",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: window.sessionStorage.getItem("token"),
+            },
             body: JSON.stringify({
               id: this.state.user.id,
             }),
@@ -143,7 +166,7 @@ class App extends Component {
   };
 
   render() {
-    const { isSignedIn, imageUrl, route, box } = this.state;
+    const { isSignedIn, imageUrl, route, boxes } = this.state;
     return (
       <div className="App">
         <Particles className="particles" params={particlesOptions} />
@@ -163,7 +186,7 @@ class App extends Component {
               onInputChange={this.onInputChange}
               onButtonSubmit={this.onButtonSubmit}
             />
-            <FaceRecognition box={box} imageUrl={imageUrl} />
+            <FaceRecognition boxes={boxes} imageUrl={imageUrl} />
           </div>
         ) : route === "signin" ? (
           <Signin loadUser={this.loadUser} onRouteChange={this.onRouteChange} />
