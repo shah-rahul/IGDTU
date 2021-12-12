@@ -44,6 +44,7 @@ const particlesOptions = {
   },
 };
 const initialState = {
+  count: "",
   input: "",
   imageUrl: "",
   boxes: [],
@@ -87,7 +88,9 @@ class App extends Component {
 
     if (boxData) {
       // if boxData not empty
-      console.log(boxData.length);
+      this.setState({
+        count: boxData.length,
+      });
       this.setState({ status: `${boxData.length} human face(s) detected` });
       return boxData.map((face) => {
         const clarifaiFace = face.region_info.bounding_box;
@@ -180,6 +183,7 @@ class App extends Component {
             <Rank
               name={this.state.user.name}
               entries={this.state.user.entries}
+              count={this.state.count}
             />
             <ImageLinkForm
               onImageUpload={this.onImageUpload}
