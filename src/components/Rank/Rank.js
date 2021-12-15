@@ -6,6 +6,11 @@ const Rank = ({ name, count }) => {
       <div className="white f3">
         {`${name}, your face detection count is   :${count}`}
       </div>
+      {count ? (
+        <div className="">
+          <h1>Total {count} faces detected</h1>
+        </div>
+      ) : null}
     </div>
   );
 };
